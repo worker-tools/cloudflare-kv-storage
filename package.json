@@ -40,13 +40,10 @@
   },
   "homepage": "https://github.com/worker-utils/cloudflare-kv-storage#readme",
   "keywords": [
-    "html",
-    "service-worker",
-    "templating",
-    "workers",
-    "streams",
-    "response",
-    "whatwg-streams",
-    "fetch-api"
+    "cloudflare",
+    "cloudflare-workers",
+    "cloudflare-workers-kv",
+    "kv-storage",
+    "standards-adherence"
   ]
 }
