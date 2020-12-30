@@ -26,7 +26,6 @@ import { AllowedKey, Key } from './kv-storage-interface';
  * 'e:vil'           => 's:e%3vil'
  * ```
  * Strings containing array delimiters or conforming to the 2-char tagging schema will be URL encoded. 
- * For the most part they should be  
  * 
  * While mostly arbitrary, pointy brackets and pipes (`<`, `>`, `|`) were chosen as delimiters because 
  * 1. they're part of ASCII (occupy single byte),
