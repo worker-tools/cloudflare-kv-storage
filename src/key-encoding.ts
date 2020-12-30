@@ -9,7 +9,8 @@ import { AllowedKey, Key } from './kv-storage-interface';
  * Since Cloudflare's KV storage only allows string keys, but KV Storage allows complex (composed) IndexedDB-like keys,
  * a format is needed to convert between the two.
  * 
- * The goal of this format is human readability, minimal tagging, and leaving regular strings unmodified, so that the most likely usage scenario carries no extra weight.
+ * The goal of this format is human readability, minimal tagging, and leaving regular strings unmodified,
+ * so that the most likely usage scenario carries no extra weight.
  * For tagging other types, 2 extra characters are used. This is the smallest sensible choice I could think of. 
  * Perhaps there's cleverer ways than prefixing, but hopefully not a simpler way.
  * 
