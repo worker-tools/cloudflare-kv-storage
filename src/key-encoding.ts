@@ -20,16 +20,17 @@ import { AllowedKey, Key } from './kv-storage-interface';
  * 'some key'        => 'some key' // (no extra quotes)
  * Number(300)       => 'n:300'
  * new Date(0)       => 'd:1970-01-01T00:00:00.000Z'
- * ['foo', 'bar', 3] => '<foo|bar|n:3>'
+ * ['foo', 'bar]     => '<foo|bar>'
  * ['foo', [1, 2]]   => '<foo|<n:1|n:2>>'
  * 'with|re<served>' => 's:with%7Cre%5Bserved%5D' // URL encoding iff necessary
  * 'e:vil'           => 's:e%3vil'
  * ```
- * Strings containing array delimiters or conforming to the 2-char tagging schema will be URL encoded. 
+ * The last two examples show how strings containing array delimiters 
+ * or conforming to the 2-char tagging schema will be processed.
  * 
  * While mostly arbitrary, pointy brackets and pipes (`<`, `>`, `|`) were chosen as delimiters because 
  * 1. they're part of ASCII (occupy single byte),
- * 2. less likely to be found in typical text than parens and commas, and
+ * 2. less likely to be found in english text than parens and commas, and
  * 3. not part of stringified JSON (common practice despite being bad-practice!?)
  * 
  * Encoding and then decoding a key will process it according to KV Storage working draft:
