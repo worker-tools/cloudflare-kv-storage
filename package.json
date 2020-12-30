@@ -1,0 +1,52 @@
+{
+  "name": "@werker/cloudflare-kv-storage",
+  "version": "0.1.0",
+  "description": "An implementation of the std:kv-storage interface wrapping Cloudflare's KV storage for Workers",
+  "type": "module",
+  "main": "index.js",
+  "module": "index.js",
+  "files": [
+    "src",
+    "*.js*",
+    "*.d.ts*"
+  ],
+  "types": "./index.d.ts",
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "clean": "rm -f *.d.ts *.js *.js.map *.d.ts.map",
+    "test": "echo \"Error: no test specified\" && exit 0",
+    "build": "tsc -d",
+    "prepack": "npm run clean && npm run build"
+  },
+  "author": "Florian Klampfer <mail@qwtel.com> (https://qwtel.com/)",
+  "license": "MIT",
+  "devDependencies": {
+    "typescript": "^4.0.3"
+  },
+  "dependencies": {
+    "@cloudflare/workers-types": "^2.1.0",
+    "base64-encoding": "^0.14.2",
+    "typeson": "^5.18.2",
+    "typeson-registry": "^1.0.0-alpha.38"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/worker-utils/cloudflare-kv-storage.git"
+  },
+  "bugs": {
+    "url": "https://github.com/worker-utils/cloudflare-kv-storage/issues"
+  },
+  "homepage": "https://github.com/worker-utils/cloudflare-kv-storage#readme",
+  "keywords": [
+    "html",
+    "service-worker",
+    "templating",
+    "workers",
+    "streams",
+    "response",
+    "whatwg-streams",
+    "fetch-api"
+  ]
+}

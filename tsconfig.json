@@ -1,0 +1,19 @@
+{
+  "compilerOptions": {
+    "lib": ["ES2020", "DOM"],
+    "target": "ES2019",
+    "moduleResolution": "Node",
+    "outDir": ".",
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "inlineSources": true,
+    "types": ["@cloudflare/workers-types"]
+  },
+  "include": [
+    "typings/*.d.ts",
+    "src/**/.ts",
+    "src/*.ts"
+  ],
+  "exclude": []
+}
