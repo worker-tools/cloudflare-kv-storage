@@ -1,7 +1,7 @@
 {
   "name": "@werker/cloudflare-kv-storage",
   "version": "0.1.0",
-  "description": "An implementation of the std:kv-storage interface wrapping Cloudflare's KV storage for Workers",
+  "description": "An implementation of the std:kv-storage interface wrapping Cloudflare's KV storage",
   "type": "module",
   "main": "index.js",
   "module": "index.js",
