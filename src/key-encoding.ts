@@ -1,5 +1,7 @@
 import { Base64Decoder, Base64Encoder } from 'base64-encoding';
-import { Key } from './storage-area-types';
+import { AllowedKey, Key } from './kv-storage-interface';
+
+// TODO: Move to separate repository?
 
 /**
  * A simple string serialization for IndexedDB-like keys.
@@ -7,12 +9,9 @@ import { Key } from './storage-area-types';
  * Since Cloudflare's KV storage only allows string keys, but KV Storage allows complex (composed) IndexedDB-like keys,
  * a format is needed to convert between the two.
  * 
- * The goal of this format is human readability, minimal tagging, and leaving regular strings unmodified so that the most likely usage scenario carries no extra weight.
- * For tagging other types using 2 extra characters is the smallest sensible choice I could think of. 
+ * The goal of this format is human readability, minimal tagging, and leaving regular strings unmodified, so that the most likely usage scenario carries no extra weight.
+ * For tagging other types, 2 extra characters are used. This is the smallest sensible choice I could think of. 
  * Perhaps there's cleverer ways than prefixing, but hopefully not a simpler way.
- * 
- * I couldn't find a format that could do this (without wrapping strings in double quotes like JSON) so I've created this format and parser.
- * Joke's on me if something like this already exists...
  * 
  * Below are some notable examples:
  * 
@@ -24,7 +23,6 @@ import { Key } from './storage-area-types';
  * ['foo', [1, 2]]   => '<foo|<n:1|n:2>>'
  * 'with|re<served>' => 's:with%7Cre%5Bserved%5D' // URL encoding iff necessary
  * 'e:vil'           => 's:e%3vil'
- * ''                => 's:' // solves an edge case in the parser..
  * ```
  * Strings containing array delimiters or conforming to the 2-char tagging schema will be URL encoded. 
  * For the most part they should be  
@@ -40,10 +38,12 @@ import { Key } from './storage-area-types';
  * @param key A IndexedDB-like key
  * @returns A string representing the key
  */
-export const encodeKey = (key: Key): string => safeKeyToCompactString(keyToSafeKey(key));
+export const encodeKey = (key: AllowedKey): string => safeKeyToCompactString(keyToSafeKey(key));
 
 /**
- * @param key A string that represents a IndexedDB-like key.
+ * Performs the opposite of `encodeKey` with the expected limitations of
+ * [key round-tripping](https://wicg.github.io/kv-storage/#key-round-trip).
+ * @param key A string that represents a IndexedDB-like key encoded with `encodeKey`.
  * @returns The round-tripped value of the corresponding key.
  */
 export const decodeKey = (key: string): Key => compactStringToKey(key);
@@ -58,10 +58,7 @@ const ARRAY_DELIMITERS = /[\<\|\>]/;
  * Performs the stringification of a key that _has already been processed according to IndexedDB's 
  * [convert a value to a key](https://w3c.github.io/IndexedDB/#convert-a-value-to-a-key) algorithm_.
  */
-const safeKeyToCompactString = (key: Key): string => {
-  if (Array.isArray(key)) {
-    return '<' + key.map(safeKeyToCompactString).join('|') + '>';
-  }
+const safeKeyToCompactString = (key: AllowedKey): string => {
   if (typeof key === 'string') {
     return key === '' || key.match(TYPED_REP) || key.match(ARRAY_DELIMITERS)
       ? `s:${encodeURIComponent(key)}`
@@ -75,6 +72,9 @@ const safeKeyToCompactString = (key: Key): string => {
   }
   if (key instanceof ArrayBuffer) {
     return `b:${new Base64Encoder().encode(key)}`
+  }
+  if (Array.isArray(key)) {
+    return '<' + key.map(safeKeyToCompactString).join('|') + '>';
   }
 }
 
@@ -105,7 +105,7 @@ const compactStringToKey = (key: string): Key => {
     }
     if (char === '>') {
       const res = stack.shift();
-      if (stack.length) stack[0].push(res); 
+      if (stack.length) stack[0].push(res);
       else return res;
     }
     prev = index + 1;
@@ -115,10 +115,8 @@ const compactStringToKey = (key: string): Key => {
 }
 
 
-type KeyPart = string|number|Date|ArrayBuffer;
-
-/** Takes a simple i.e. single key string, strips the tag if any, and converts it to a JS type. */
-const stringPartToKey = (part: string): KeyPart => {
+/** Takes a single key string, strips the tag (if any), and converts it its correspondign JS type */
+const stringPartToKey = (part: string): string | number | Date | ArrayBuffer => {
   const m = part.match(TYPED_REP);
   if (m) {
     const data = part.substring(2);
@@ -136,10 +134,11 @@ const stringPartToKey = (part: string): KeyPart => {
 /**
  * Copyright 2017 Jeremy Scheff
  * Licensed under MIT
+ * <https://github.com/dumbmatter/fakeIndexedDB>
  * 
- * Implements <https://w3c.github.io/IndexedDB/#convert-a-value-to-a-key>
+ * A pure JS implementation of [IndexedDB's Convert a Value to a Key routine](https://w3c.github.io/IndexedDB/#convert-a-value-to-a-key).
  */
-const keyToSafeKey = (input: Key, seen: Set<object> = new Set()): Key => {
+const keyToSafeKey = (input: AllowedKey, seen: Set<object> = new Set()): AllowedKey => {
   if (typeof input === "number") {
     if (isNaN(input)) {
       throw new Error();
@@ -184,41 +183,3 @@ const keyToSafeKey = (input: Key, seen: Set<object> = new Set()): Key => {
     throw new Error();
   }
 };
-
-/**
- * 
- * Copyright 2019 Google Inc.
- * Licensed under Apache-2.0.
- * <https://github.com/GoogleChromeLabs/kv-storage-polyfill>
- */
-export function throwForDisallowedKey(key: any) {
-  if (!isAllowedAsAKey(key)) {
-    throw Error('kv-storage: The given value is not allowed as a key: ' + key);
-  }
-}
-
-function isAllowedAsAKey(value: any) {
-  if (typeof value === 'number' || typeof value === 'string') {
-    return true;
-  }
-
-  if (typeof value === 'object' && value) {
-    if (Array.isArray(value)) {
-      return true;
-    }
-
-    if (value instanceof Date) {
-      return true;
-    }
-
-    if (ArrayBuffer.isView(value)) {
-      return true;
-    }
-
-    if (value instanceof ArrayBuffer) {
-      return true;
-    }
-  }
-
-  return false;
-}

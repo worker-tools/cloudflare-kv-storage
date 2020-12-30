@@ -2,35 +2,21 @@ import Typeson from 'typeson';
 import structuredCloningThrowing from 'typeson-registry/dist/presets/structured-cloning-throwing';
 
 import { Awaitable } from './common-types';
-import { encodeKey, decodeKey, throwForDisallowedKey } from './cf-storage-area-keys';
-import { Key, StorageArea } from './storage-area-types';
+import { StorageArea, AllowedKey, Key } from './kv-storage-interface';
+import { throwForDisallowedKey } from './common'
+import { encodeKey, decodeKey } from './key-encoding';
 
 // https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Structured_clone_algorithm
 const TSON = new Typeson().register(structuredCloningThrowing);
 
-const setValue = async <T>(kv: KVNamespace, key: string, value: T, options: CFSetOptions, packer: KVPacker) =>
+const setValue = async <T>(kv: KVNamespace, key: string, value: T, options: KVPutOptions, packer: KVPacker) =>
   kv.put(key, await packer.pack(TSON.encapsulate(value)), options);
 
 const getValue = async (kv: KVNamespace, key: string, packer: KVPacker) =>
   TSON.revive(await packer.unpack(kv, key));
 
-async function* paginationHelper(kv: KVNamespace) {
-  let keys: { name: string; expiration?: number; metadata?: unknown }[];
-  let done: boolean;
-  let cursor: string;
-  do {
-    ({ keys, list_complete: done, cursor } = await kv.list({ ...cursor ? { cursor } : {} }));
-    for (const { name } of keys) yield name;
-  } while (!done);
-}
-
-export interface CFSetOptions {
-  expiration?: string | number;
-  expirationTtl?: string | number;
-}
-
 /**
- * An implementation of the `StorageArea` interface, wrapping Cloudflare Worker's KV store.
+ * An implementation of the `StorageArea` interface wrapping Cloudflare Worker's KV store.
  * 
  * The goal of this class is ease of use and compatibility with other Storage Area implementations, 
  * such as <https://github.com/GoogleChromeLabs/kv-storage-polyfill>.
@@ -45,7 +31,7 @@ export class KVStorageArea implements StorageArea<KVNamespace> {
   #kv: KVNamespace;
   #packer: KVPacker;
 
-  constructor(name: string | KVNamespace, { packer = new JSONPacker() }: { packer?: KVPacker } = {}) {
+  constructor(name: string | KVNamespace, { packer = new JSONPacker() }: KVOptions = {}) {
     this.#kv = (typeof name === 'string')
       ? Reflect.get(self, name)
       : name;
@@ -53,12 +39,12 @@ export class KVStorageArea implements StorageArea<KVNamespace> {
     this.#packer = packer;
   }
 
-  async get<T>(key: Key): Promise<T> {
+  async get<T>(key: AllowedKey): Promise<T> {
     throwForDisallowedKey(key);
     return getValue(this.#kv, encodeKey(key), this.#packer);
   }
 
-  async set<T>(key: Key, value: T | undefined, options?: CFSetOptions): Promise<void> {
+  async set<T>(key: AllowedKey, value: T | undefined, options?: KVPutOptions): Promise<void> {
     if (value === undefined) await this.#kv.delete(encodeKey(key));
     else {
       throwForDisallowedKey(key);
@@ -66,31 +52,31 @@ export class KVStorageArea implements StorageArea<KVNamespace> {
     }
   }
 
-  async delete(key: Key) {
+  async delete(key: AllowedKey) {
     throwForDisallowedKey(key);
     return this.#kv.delete(encodeKey(key));
   }
 
-  async clear() {
-    for await (const key of paginationHelper(this.#kv)) {
+  async clear(opts?: KVListOptions) {
+    for await (const key of paginationHelper(this.#kv, opts)) {
       await this.#kv.delete(key)
     }
   }
 
-  async *keys(): AsyncGenerator<Key> {
-    for await (const key of paginationHelper(this.#kv)) {
+  async *keys(opts?: KVListOptions): AsyncGenerator<Key> {
+    for await (const key of paginationHelper(this.#kv, opts)) {
       yield decodeKey(key);
     }
   }
 
-  async *values<T>(): AsyncGenerator<T> {
-    for await (const key of paginationHelper(this.#kv)) {
+  async *values<T>(opts?: KVListOptions): AsyncGenerator<T> {
+    for await (const key of paginationHelper(this.#kv, opts)) {
       yield getValue(this.#kv, key, this.#packer);
     }
   }
 
-  async *entries<T>(): AsyncGenerator<[Key, T]> {
-    for await (const key of paginationHelper(this.#kv)) {
+  async *entries<T>(opts?: KVListOptions): AsyncGenerator<[Key, T]> {
+    for await (const key of paginationHelper(this.#kv, opts)) {
       yield [decodeKey(key), await getValue(this.#kv, key, this.#packer)];
     }
   }
@@ -101,17 +87,39 @@ export class KVStorageArea implements StorageArea<KVNamespace> {
 }
 
 export interface KVPacker {
-  pack(x: any): Awaitable<string | ArrayBuffer | ReadableStream<Uint8Array>>;
+  pack(typeson: any): Awaitable<string | ArrayBuffer | ReadableStream<Uint8Array>>;
   unpack(kv: KVNamespace, key: string): Promise<any>;
 }
 
 export class JSONPacker implements KVPacker {
-  pack(x: any) { 
-    return JSON.stringify(x);
-  }
-  async unpack(kv: KVNamespace, key: string) { 
-    return await kv.get(key, 'json');
-  }
+  pack(typeson: any) { return JSON.stringify(typeson) }
+  async unpack(kv: KVNamespace, key: string) { return await kv.get(key, 'json') }
 }
 
-export * from './storage-area-types';
+export interface KVOptions {
+  packer?: KVPacker
+}
+
+export interface KVPutOptions {
+  expiration?: string | number;
+  expirationTtl?: string | number;
+}
+
+export interface KVListOptions {
+  prefix?: string
+}
+
+/**
+ * Abstracts Cloudflare KV's cursor-based pagination with async iteration.
+ */
+async function* paginationHelper(kv: KVNamespace, opts: KVListOptions = {}) {
+  let keys: { name: string; expiration?: number; metadata?: unknown }[];
+  let done: boolean;
+  let cursor: string;
+  do {
+    ({ keys, list_complete: done, cursor } = await kv.list({ ...cursor ? { ...opts, cursor } : opts }));
+    for (const { name } of keys) yield name;
+  } while (!done);
+}
+
+export * from './kv-storage-interface';
