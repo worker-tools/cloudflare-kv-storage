@@ -1,5 +1,5 @@
 import { Base64Decoder, Base64Encoder } from 'base64-encoding';
-import { AllowedKey, Key } from './kv-storage-interface';
+import { AllowedKey, RoundTripKey } from './interface';
 
 // TODO: Move to separate repository?
 
@@ -39,7 +39,7 @@ import { AllowedKey, Key } from './kv-storage-interface';
  * @param key A IndexedDB-like key
  * @returns A string representing the key
  */
-export const encodeKey = (key: AllowedKey): string => safeKeyToCompactString(keyToSafeKey(key));
+export const encodeKey = (key: AllowedKey): string => keyToKeyString(valueToKey(key));
 
 /**
  * Performs the opposite of `encodeKey` with the expected limitations of
@@ -47,7 +47,7 @@ export const encodeKey = (key: AllowedKey): string => safeKeyToCompactString(key
  * @param key A string that represents a IndexedDB-like key encoded with `encodeKey`.
  * @returns The round-tripped value of the corresponding key.
  */
-export const decodeKey = (key: string): Key => compactStringToKey(key);
+export const decodeKey = (key: string): RoundTripKey => keyStringToKey(key);
 
 /** Matches any tagged data type (number, date, buffer, string-with-reserved chars) */
 const TYPED_REP = /^(\w):/;
@@ -59,7 +59,7 @@ const ARRAY_DELIMITERS = /[\<\|\>]/;
  * Performs the stringification of a key that _has already been processed according to IndexedDB's 
  * [convert a value to a key](https://w3c.github.io/IndexedDB/#convert-a-value-to-a-key) algorithm_.
  */
-const safeKeyToCompactString = (key: AllowedKey): string => {
+const keyToKeyString = (key: AllowedKey): string => {
   if (typeof key === 'string') {
     return key === '' || key.match(TYPED_REP) || key.match(ARRAY_DELIMITERS)
       ? `s:${encodeURIComponent(key)}`
@@ -75,7 +75,7 @@ const safeKeyToCompactString = (key: AllowedKey): string => {
     return `b:${new Base64Encoder().encode(key)}`
   }
   if (Array.isArray(key)) {
-    return '<' + key.map(safeKeyToCompactString).join('|') + '>';
+    return '<' + key.map(keyToKeyString).join('|') + '>';
   }
 }
 
@@ -83,12 +83,12 @@ const safeKeyToCompactString = (key: AllowedKey): string => {
  * Performs de-stringification/parsing of a key. 
  * Uses a simple stack mechanism to match nested parens.
  */
-const compactStringToKey = (key: string): Key => {
+const keyStringToKey = (key: string): RoundTripKey => {
   const re = new RegExp(ARRAY_DELIMITERS, 'g');
 
   let match = re.exec(key);
   if (!match) {
-    return stringPartToKey(key);
+    return partToKey(key);
   }
 
   const stack = [];
@@ -101,7 +101,7 @@ const compactStringToKey = (key: string): Key => {
     }
     if (char === '|' || char === '>') {
       if (prev !== index) {
-        stack[0].push(stringPartToKey(key.substring(prev, index)));
+        stack[0].push(partToKey(key.substring(prev, index)));
       }
     }
     if (char === '>') {
@@ -116,8 +116,8 @@ const compactStringToKey = (key: string): Key => {
 }
 
 
-/** Takes a single key string, strips the tag (if any), and converts it its correspondign JS type */
-const stringPartToKey = (part: string): string | number | Date | ArrayBuffer => {
+/** Takes a single key string, strips the tag (if any), and converts it to its corresponding JS type */
+const partToKey = (part: string): string | number | Date | ArrayBuffer => {
   const m = part.match(TYPED_REP);
   if (m) {
     const data = part.substring(2);
@@ -133,13 +133,15 @@ const stringPartToKey = (part: string): string | number | Date | ArrayBuffer => 
 }
 
 /**
+ * A pure JS implementation of IndexedDB's 
+ * [convert a value to a key](https://w3c.github.io/IndexedDB/#convert-a-value-to-a-key)
+ * routine.
+ * 
  * Copyright 2017 Jeremy Scheff
  * Licensed under MIT
  * <https://github.com/dumbmatter/fakeIndexedDB>
- * 
- * A pure JS implementation of [IndexedDB's Convert a Value to a Key routine](https://w3c.github.io/IndexedDB/#convert-a-value-to-a-key).
  */
-const keyToSafeKey = (input: AllowedKey, seen: Set<object> = new Set()): AllowedKey => {
+const valueToKey = (input: AllowedKey, seen: Set<object> = new Set()): AllowedKey => {
   if (typeof input === "number") {
     if (isNaN(input)) {
       throw new Error();
@@ -176,7 +178,7 @@ const keyToSafeKey = (input: AllowedKey, seen: Set<object> = new Set()): Allowed
         throw new Error();
       }
       const entry = input[i];
-      const key = keyToSafeKey(entry, seen);
+      const key = valueToKey(entry, seen);
       keys.push(key);
     }
     return keys;

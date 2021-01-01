@@ -1,5 +1,5 @@
 export type AllowedKey = string | number | Date | BufferSource | AllowedKey[];
-export type Key = string | number | Date | ArrayBuffer | Key[];
+export type RoundTripKey = string | number | Date | ArrayBuffer | RoundTripKey[];
 
 // TODO: move to separate repository
 
@@ -22,9 +22,9 @@ export interface StorageArea<BS = any> {
   delete(key: AllowedKey, opts?: Options): Promise<void> ;
   clear(opts?: Options): Promise<void> ;
 
-  keys(opts?: Options): AsyncIterableIterator<Key>;
+  keys(opts?: Options): AsyncIterableIterator<RoundTripKey>;
   values<T>(opts?: Options): AsyncIterableIterator<T>;
-  entries<T>(opts?: Options): AsyncIterableIterator<[Key, T]>;
+  entries<T>(opts?: Options): AsyncIterableIterator<[RoundTripKey, T]>;
 
   backingStore(): BS;
 };

@@ -1,7 +1,7 @@
 import Typeson from 'typeson';
 import structuredCloningThrowing from 'typeson-registry/dist/presets/structured-cloning-throwing';
 
-import { StorageArea, AllowedKey, Key } from './kv-storage-interface';
+import { StorageArea, AllowedKey, RoundTripKey } from './interface';
 import { throwForDisallowedKey } from './common'
 import { encodeKey, decodeKey } from './key-encoding';
 
@@ -26,7 +26,7 @@ const getValue = async (kv: KVNamespace, key: string, packer: KVPacker, opts?: a
  * Note that efficiency is not a goal. Specifically, if you have sizable `ArrayBuffer`s,
  * it's much better to use Cloudflare's KV directly.
  */
-export class KVStorageArea implements StorageArea<KVNamespace> {
+export class CFStorageArea implements StorageArea<KVNamespace> {
   #kv: KVNamespace;
   #packer: KVPacker;
 
@@ -63,7 +63,7 @@ export class KVStorageArea implements StorageArea<KVNamespace> {
     }
   }
 
-  async *keys(opts?: KVListOptions): AsyncGenerator<Key> {
+  async *keys(opts?: KVListOptions): AsyncGenerator<RoundTripKey> {
     for await (const key of paginationHelper(this.#kv, opts)) {
       yield decodeKey(key);
     }
@@ -75,7 +75,7 @@ export class KVStorageArea implements StorageArea<KVNamespace> {
     }
   }
 
-  async *entries<T>(opts?: KVListOptions): AsyncGenerator<[Key, T]> {
+  async *entries<T>(opts?: KVListOptions): AsyncGenerator<[RoundTripKey, T]> {
     for await (const key of paginationHelper(this.#kv, opts)) {
       yield [decodeKey(key), await getValue(this.#kv, key, this.#packer, opts)];
     }
@@ -126,4 +126,5 @@ async function* paginationHelper(kv: KVNamespace, opts: KVListOptions = {}) {
   } while (!done);
 }
 
-export * from './kv-storage-interface';
+export { CFStorageArea as KVStorageArea };
+export * from './interface';
