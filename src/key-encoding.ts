@@ -162,9 +162,9 @@ const valueToKey = (input: AllowedKey, seen: Set<object> = new Set()): AllowedKe
       ArrayBuffer.isView(input))
   ) {
     if (input instanceof ArrayBuffer) {
-      return new Uint8Array(input).buffer;
+      return input;
     }
-    return new Uint8Array(input.buffer).buffer;
+    return new Uint8Array(input.buffer, input.byteOffset, input.byteLength).slice().buffer;
   } else if (Array.isArray(input)) {
     if (seen.has(input)) {
       throw new Error();
