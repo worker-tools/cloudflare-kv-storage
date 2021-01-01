@@ -44,10 +44,10 @@ export class CloudflareStorageArea implements StorageArea<KVNamespace> {
   }
 
   async set<T>(key: AllowedKey, value: T | undefined, opts?: KVPutOptions): Promise<void> {
+    throwForDisallowedKey(key);
     if (value === undefined) 
       await this.#kv.delete(encodeKey(key));
     else {
-      throwForDisallowedKey(key);
       await setValue(this.#kv, encodeKey(key), value, this.#packer, opts);
     }
   }
@@ -113,9 +113,7 @@ export interface KVListOptions {
   prefix?: string
 }
 
-/**
- * Abstracts Cloudflare KV's cursor-based pagination with async iteration.
- */
+/** Abstracts Cloudflare KV's cursor-based pagination with async iteration. */
 async function* paginationHelper(kv: KVNamespace, opts: KVListOptions = {}) {
   let keys: { name: string; expiration?: number; metadata?: unknown }[];
   let done: boolean;
