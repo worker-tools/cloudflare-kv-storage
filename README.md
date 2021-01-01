@@ -1,24 +1,21 @@
 # Cloudflare Storage Area
 
-An implementation of the [`StorageArea`](https://wicg.github.io/kv-storage/) interface using Cloudflare Worker's KV storage as a backing store.
+An implementation of the StorageArea ([1],[2],[3]) interface using [Cloudflare Worker's KV](https://developers.cloudflare.com/workers/runtime-apis/kv) 
+storage as a backing store.
 
 The goal of this class is ease of use and compatibility with other Storage Area implementations, 
-such as <https://github.com/GoogleChromeLabs/kv-storage-polyfill>.
+such as [`kv-storage-polyfill`](https://github.com/GoogleChromeLabs/kv-storage-polyfill).
 
 While work on [the specification](https://wicg.github.io/kv-storage/) itself has stopped, 
 it's still a good interface for asynchronous data access that feels native to JavaScript.
 
-Note that efficiency is not a goal. Specifically, if you have sizable `ArrayBuffer`s,
-it's much better to use Cloudflare's KV directly.
-
 ## Usage
 
 ``` ts
-import { StorageArea, KVStorageArea } from '@werker/cloudflare-kv-storage';
+import { StorageArea, CloudflareStorageArea } from '@werker/cloudflare-kv-storage';
 
 // Pass a `KVNamespace` or the name of a kv namespace bound to this worker:
-const storage = new KVStorageArea(self.MY_FIRST_KV);
-const sessionStore = new KVStorageArea('SESSION_KV');
+const storage = new CloudflareStorageArea('MY_FIRST_KV');
 ```
 
 You can now write cross-platform, cross-worker-env code:
@@ -30,29 +27,22 @@ async function myFunc(sto: StorageArea) {
 }
 ```
 
-Note that some of the underlying features of Cloudflare KV, such as TTL, are still exposed via the optional options parameter. If the underlying implementation isn't a ` KVStorageArea`, the settings simply won't have an effect.
+Note that some of the underlying features of Cloudflare KV, such as [`expirationTtl`](https://developers.cloudflare.com/workers/runtime-apis/kv#expiring-keys), 
+are still exposed via the optional options parameter[^1]. 
+If the underlying implementation isn't a ` CloudflareStorageArea`, the setting simply won't have an effect.
+
+[1]: https://developers.google.com/web/updates/2019/03/kv-storage
+[2]: https://css-tricks.com/kv-storage/
+[3]: https://github.com/WICG/kv-storage
 
 
-<!-- ### Advanced
-By default, objects are stored as JSON strings. 
-This makes inspecting values in the Cloudflare dashboard easier.
+## Disclaimers
 
-If you want to save some bytes by storing data in a binary format, you can provider your own `KVPacker`.
-E.g.:
+Note that efficiency is not a goal. Specifically, if you have sizable `ArrayBuffer`s,
+it's much better to use Cloudflare's KV directly.
 
-```ts
-import msgpack from 'msgpack-lite';
-import { KVStorageArea, KVPacker } from '@werker/cloudflare-kv-storage';
+***
 
-export class MsgPacker implements KVPacker {
-  pack(typeson: any): Uint8Array { 
-    return msgpack.encode(typeson);
-  }
-  async unpack(kv: KVNamespace, key: string) { 
-    const ab = await kv.get(key, 'arrayBuffer');
-    return ab && msgpack.decode(ab); 
-  }
-}
-
-const storage1 = new KVStorageArea(self.MY_FIRST_KV, { packer: new MsgPacker() });
-```  -->
+[^1]: I took the liberty of adding the options record to the base interface, since 
+      a) standardization has stopped anyway 
+      b) if an extra parameters were to be added to the spec, there's a good chance it will be an record as well.

@@ -26,7 +26,7 @@ const getValue = async (kv: KVNamespace, key: string, packer: KVPacker, opts?: a
  * Note that efficiency is not a goal. Specifically, if you have sizable `ArrayBuffer`s,
  * it's much better to use Cloudflare's KV directly.
  */
-export class CFStorageArea implements StorageArea<KVNamespace> {
+export class CloudflareStorageArea implements StorageArea<KVNamespace> {
   #kv: KVNamespace;
   #packer: KVPacker;
 
@@ -126,5 +126,7 @@ async function* paginationHelper(kv: KVNamespace, opts: KVListOptions = {}) {
   } while (!done);
 }
 
-export { CFStorageArea as KVStorageArea };
+/** @deprecated for backwards compat with v0.2.0 */
+export class KVStorageArea extends CloudflareStorageArea {};
+export { CloudflareStorageArea as CFStorageArea }; // for ease of use
 export * from './interface';
