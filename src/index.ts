@@ -34,11 +34,11 @@ export class CloudflareStorageArea implements StorageArea<KVNamespace> {
     this.#kv = (typeof name === 'string')
       ? Reflect.get(self, name)
       : name;
-    if (!this.#kv) throw Error('KV binding missing. Consult CF Workers documentation for details')
+    if (!this.#kv) throw Error('KV binding missing. Consult Workers documentation for details')
     this.#packer = packer;
   }
 
-  async get<T>(key: AllowedKey, opts?: any): Promise<T> {
+  async get<T>(key: AllowedKey, opts?: unknown): Promise<T> {
     throwForDisallowedKey(key);
     return getValue(this.#kv, encodeKey(key), this.#packer, opts);
   }

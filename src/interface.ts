@@ -1,14 +1,14 @@
 export type AllowedKey = string | number | Date | BufferSource | AllowedKey[];
 export type RoundTripKey = string | number | Date | ArrayBuffer | RoundTripKey[];
 
+type Options = Record<string, any>;
+
 // TODO: move to separate repository
 
 declare var StorageArea: {
   prototype: StorageArea;
-  new(name: string): StorageArea;
+  new(name: string, opts?: Options): StorageArea;
 };
-
-type Options = Record<string, any>;
 
 /**
  * Main differences to the working draft:
