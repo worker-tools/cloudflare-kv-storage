@@ -77,6 +77,8 @@ const keyToKeyString = (key: AllowedKey): string => {
   if (Array.isArray(key)) {
     return '<' + key.map(keyToKeyString).join('|') + '>';
   }
+
+  throw Error('Key not allowed')
 }
 
 /**
@@ -91,7 +93,7 @@ const keyStringToKey = (key: string): RoundTripKey => {
     return partToKey(key);
   }
 
-  const stack = [];
+  const stack: any[] = [];
   let prev = 0;
   do {
     const char = match[0];
@@ -127,9 +129,8 @@ const partToKey = (part: string): string | number | Date | ArrayBuffer => {
       case 'b': return new Base64Decoder().decode(data).buffer;
       case 's': return decodeURIComponent(data);
     }
-  } else {
-    return part;
   }
+  return part;
 }
 
 /**

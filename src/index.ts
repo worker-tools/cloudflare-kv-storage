@@ -92,7 +92,7 @@ export interface KVListOptions {
 async function* paginationHelper(kv: KVNamespace, opts: KVListOptions = {}) {
   let keys: { name: string; expiration?: number; metadata?: unknown }[];
   let done: boolean;
-  let cursor: string;
+  let cursor: string | undefined;
   do {
     ({ keys, list_complete: done, cursor } = await kv.list({ ...cursor ? { ...opts, cursor } : opts }));
     for (const { name } of keys) yield name;
