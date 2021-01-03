@@ -1,18 +1,7 @@
-import Typeson from 'typeson';
-import structuredCloningThrowing from 'typeson-registry/dist/presets/structured-cloning-throwing';
-
 import { StorageArea, AllowedKey, RoundTripKey } from './interface';
 import { throwForDisallowedKey } from './common'
 import { encodeKey, decodeKey } from './key-encoding';
-
-// https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Structured_clone_algorithm
-const TSON = new Typeson().register(structuredCloningThrowing);
-
-const setValue = async (kv: KVNamespace, key: string, value: any, packer: KVPacker, opts?: any) =>
-  await packer.set(kv, key, TSON.encapsulate(value), opts);
-
-const getValue = async (kv: KVNamespace, key: string, packer: KVPacker, opts?: any) =>
-  TSON.revive(await packer.get(kv, key, opts));
+import { KVPacker, TypesonPacker } from './packer';
 
 /**
  * An implementation of the `StorageArea` interface wrapping Cloudflare Worker's KV store.
@@ -30,7 +19,7 @@ export class CloudflareStorageArea implements StorageArea<KVNamespace> {
   #kv: KVNamespace;
   #packer: KVPacker;
 
-  constructor(name: string | KVNamespace, { packer = new JSONPacker() }: KVOptions = {}) {
+  constructor(name: string | KVNamespace, { packer = new TypesonPacker() }: KVOptions = {}) {
     this.#kv = (typeof name === 'string')
       ? Reflect.get(self, name)
       : name;
@@ -40,7 +29,7 @@ export class CloudflareStorageArea implements StorageArea<KVNamespace> {
 
   async get<T>(key: AllowedKey, opts?: unknown): Promise<T> {
     throwForDisallowedKey(key);
-    return getValue(this.#kv, encodeKey(key), this.#packer, opts);
+    return this.#packer.get(this.#kv, encodeKey(key), opts);
   }
 
   async set<T>(key: AllowedKey, value: T | undefined, opts?: KVPutOptions): Promise<void> {
@@ -48,7 +37,7 @@ export class CloudflareStorageArea implements StorageArea<KVNamespace> {
     if (value === undefined) 
       await this.#kv.delete(encodeKey(key));
     else {
-      await setValue(this.#kv, encodeKey(key), value, this.#packer, opts);
+      await this.#packer.set(this.#kv, encodeKey(key), value, opts);
     }
   }
 
@@ -71,32 +60,18 @@ export class CloudflareStorageArea implements StorageArea<KVNamespace> {
 
   async *values<T>(opts?: KVListOptions): AsyncGenerator<T> {
     for await (const key of paginationHelper(this.#kv, opts)) {
-      yield getValue(this.#kv, key, this.#packer, opts);
+      yield this.#packer.get(this.#kv, key, opts);
     }
   }
 
   async *entries<T>(opts?: KVListOptions): AsyncGenerator<[RoundTripKey, T]> {
     for await (const key of paginationHelper(this.#kv, opts)) {
-      yield [decodeKey(key), await getValue(this.#kv, key, this.#packer, opts)];
+      yield [decodeKey(key), await this.#packer.get(this.#kv, key, opts)];
     }
   }
 
   backingStore() {
     return this.#kv;
-  }
-}
-
-export interface KVPacker {
-  set(kv: KVNamespace, key: string, tson: any, opts?: any): Promise<void>;
-  get(kv: KVNamespace, key: string, opts?: any): Promise<any>;
-}
-
-export class JSONPacker implements KVPacker {
-  async set(kv: KVNamespace, key: string, tson: any, opts?: KVPutOptions) { 
-    await kv.put(key, JSON.stringify(tson), opts);
-  }
-  async get(kv: KVNamespace, key: string) { 
-    return await kv.get(key, 'json');
   }
 }
 

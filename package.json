@@ -28,6 +28,8 @@
   "dependencies": {
     "@cloudflare/workers-types": "^2.1.0",
     "base64-encoding": "^0.14.2",
+    "cbor-x": "^0.6.0",
+    "msgpackr": "^1.1.0",
     "typeson": "^5.18.2",
     "typeson-registry": "^1.0.0-alpha.38"
   },
