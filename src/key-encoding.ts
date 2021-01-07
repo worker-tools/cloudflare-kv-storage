@@ -55,11 +55,14 @@ const TYPED_REP = /^(\w):/;
 /** Matches any string containing reserved chars */
 const ARRAY_DELIMITERS = /[\<\|\>]/;
 
+/** Internally we use `Uint8Array`s instead of array buffers to avoid unnecessary copying. */
+type InternalAllowedKey = string | number | Date | Uint8Array | InternalAllowedKey[];
+
 /**
  * Performs the stringification of a key that _has already been processed according to IndexedDB's 
  * [convert a value to a key](https://w3c.github.io/IndexedDB/#convert-a-value-to-a-key) algorithm_.
  */
-const keyToKeyString = (key: AllowedKey): string => {
+const keyToKeyString = (key: InternalAllowedKey): string => {
   if (typeof key === 'string') {
     return key === '' || key.match(TYPED_REP) || key.match(ARRAY_DELIMITERS)
       ? `s:${encodeURIComponent(key)}`
@@ -71,7 +74,7 @@ const keyToKeyString = (key: AllowedKey): string => {
   if (key instanceof Date) {
     return `d:${key.toISOString()}`;
   }
-  if (key instanceof ArrayBuffer) {
+  if (key instanceof Uint8Array) {
     return `b:${new Base64Encoder().encode(key)}`
   }
   if (Array.isArray(key)) {
@@ -142,7 +145,7 @@ const partToKey = (part: string): string | number | Date | ArrayBuffer => {
  * Licensed under MIT
  * <https://github.com/dumbmatter/fakeIndexedDB>
  */
-const valueToKey = (input: AllowedKey, seen: Set<object> = new Set()): AllowedKey => {
+const valueToKey = (input: AllowedKey, seen: Set<object> = new Set()): InternalAllowedKey => {
   if (typeof input === "number") {
     if (isNaN(input)) {
       throw new Error();
@@ -163,9 +166,9 @@ const valueToKey = (input: AllowedKey, seen: Set<object> = new Set()): AllowedKe
       ArrayBuffer.isView(input))
   ) {
     if (input instanceof ArrayBuffer) {
-      return input;
+      return new Uint8Array(input);
     }
-    return new Uint8Array(input.buffer, input.byteOffset, input.byteLength).slice().buffer;
+    return new Uint8Array(input.buffer, input.byteOffset, input.byteLength);
   } else if (Array.isArray(input)) {
     if (seen.has(input)) {
       throw new Error();
