@@ -35,12 +35,12 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/worker-utils/cloudflare-kv-storage.git"
+    "url": "git+https://github.com/worker-tools/cloudflare-kv-storage.git"
   },
   "bugs": {
-    "url": "https://github.com/worker-utils/cloudflare-kv-storage/issues"
+    "url": "https://github.com/worker-tools/cloudflare-kv-storage/issues"
   },
-  "homepage": "https://github.com/worker-utils/cloudflare-kv-storage#readme",
+  "homepage": "https://github.com/worker-tools/cloudflare-kv-storage#readme",
   "keywords": [
     "cloudflare",
     "cloudflare-workers",
