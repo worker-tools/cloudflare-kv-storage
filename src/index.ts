@@ -1,4 +1,4 @@
-import { StorageArea, AllowedKey, RoundTripKey } from './interface';
+import { StorageArea, AllowedKey, Key } from './interface';
 import { throwForDisallowedKey } from './common'
 import { encodeKey, decodeKey } from './key-encoding';
 import { KVPacker, TypesonPacker } from './packer';
@@ -52,7 +52,7 @@ export class CloudflareStorageArea implements StorageArea<KVNamespace> {
     }
   }
 
-  async *keys(opts?: KVListOptions): AsyncGenerator<RoundTripKey> {
+  async *keys(opts?: KVListOptions): AsyncGenerator<Key> {
     for await (const key of paginationHelper(this.#kv, opts)) {
       yield decodeKey(key);
     }
@@ -64,7 +64,7 @@ export class CloudflareStorageArea implements StorageArea<KVNamespace> {
     }
   }
 
-  async *entries<T>(opts?: KVListOptions): AsyncGenerator<[RoundTripKey, T]> {
+  async *entries<T>(opts?: KVListOptions): AsyncGenerator<[Key, T]> {
     for await (const key of paginationHelper(this.#kv, opts)) {
       yield [decodeKey(key), await this.#packer.get(this.#kv, key, opts)];
     }

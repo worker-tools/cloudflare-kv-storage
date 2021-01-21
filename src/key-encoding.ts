@@ -1,5 +1,5 @@
 import { Base64Decoder, Base64Encoder } from 'base64-encoding';
-import { AllowedKey, RoundTripKey } from './interface';
+import { AllowedKey, Key } from './interface';
 
 // TODO: Move to separate repository?
 
@@ -47,7 +47,7 @@ export const encodeKey = (key: AllowedKey): string => keyToKeyString(valueToKey(
  * @param key A string that represents a IndexedDB-like key encoded with `encodeKey`.
  * @returns The round-tripped value of the corresponding key.
  */
-export const decodeKey = (key: string): RoundTripKey => keyStringToKey(key);
+export const decodeKey = (key: string): Key => keyStringToKey(key);
 
 /** Matches any tagged data type (number, date, buffer, string-with-reserved chars) */
 const TYPED_REP = /^(\w):/;
@@ -88,7 +88,7 @@ const keyToKeyString = (key: InternalAllowedKey): string => {
  * Performs de-stringification/parsing of a key. 
  * Uses a simple stack mechanism to match nested parens.
  */
-const keyStringToKey = (key: string): RoundTripKey => {
+const keyStringToKey = (key: string): Key => {
   const re = new RegExp(ARRAY_DELIMITERS, 'g');
 
   let match = re.exec(key);
