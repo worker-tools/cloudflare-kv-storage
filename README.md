@@ -12,7 +12,7 @@ it's still a good interface for asynchronous data access that feels native to Ja
 ## Usage
 
 ``` ts
-import { StorageArea, CloudflareStorageArea } from '@werker/cloudflare-kv-storage';
+import { StorageArea, CloudflareStorageArea } from '@worker-tools/cloudflare-kv-storage';
 
 // Pass a `KVNamespace` or the name of a kv namespace bound to this worker:
 const storage = new CloudflareStorageArea('MY_FIRST_KV');
