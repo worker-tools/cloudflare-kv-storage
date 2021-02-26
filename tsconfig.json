@@ -9,7 +9,7 @@
     "sourceMap": true,
     "esModuleInterop": true,
     "inlineSources": true,
-    "types": ["@cloudflare/workers-types"],
+    "types": ["@cloudflare/workers-types", "@types/node"],
     "strict": true,
   },
   "include": [
