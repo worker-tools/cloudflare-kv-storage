@@ -29,7 +29,7 @@
   "dependencies": {
     "@cloudflare/workers-types": "^2.1.0",
     "base64-encoding": "^0.14.3",
-    "kv-storage-interface": "^0.1.1",
+    "kv-storage-interface": "^0.1.2",
     "msgpackr": "^1.2.7",
     "typeson": "^5.18.2",
     "typeson-registry": "^1.0.0-alpha.38"
