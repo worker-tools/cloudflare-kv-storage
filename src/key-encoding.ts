@@ -1,5 +1,5 @@
 import { Base64Decoder, Base64Encoder } from 'base64-encoding';
-import { AllowedKey, Key } from './interface';
+import { AllowedKey, Key } from 'kv-storage-interface';
 
 // TODO: Move to separate repository?
 

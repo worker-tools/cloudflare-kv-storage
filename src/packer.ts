@@ -1,6 +1,6 @@
 import Typeson from 'typeson';
 import structuredCloningThrowing from 'typeson-registry/dist/presets/structured-cloning-throwing';
-import { Encoder as MsgPackEncoder, Decoder as MsgPackDecoder } from '@qwtel/msgpackr';
+import { Encoder as MsgPackEncoder, Decoder as MsgPackDecoder } from 'msgpackr';
 // import { Encoder as CBOREncoder, Decoder as CBORDecoder } from 'cbor-x';
 
 import { KVPutOptions } from '.';

@@ -1,4 +1,4 @@
-import { StorageArea, AllowedKey, Key } from './interface';
+import { StorageArea, AllowedKey, Key } from 'kv-storage-interface';
 import { throwForDisallowedKey } from './common'
 import { encodeKey, decodeKey } from './key-encoding';
 import { KVPacker, TypesonPacker } from './packer';
@@ -15,7 +15,7 @@ import { KVPacker, TypesonPacker } from './packer';
  * Note that efficiency is not a goal. Specifically, if you have sizable `ArrayBuffer`s,
  * it's much better to use Cloudflare's KV directly.
  */
-export class CloudflareStorageArea implements StorageArea<KVNamespace> {
+export class CloudflareStorageArea implements StorageArea {
   #kv: KVNamespace;
   #packer: KVPacker;
 
@@ -101,5 +101,7 @@ async function* paginationHelper(kv: KVNamespace, opts: KVListOptions = {}) {
 
 /** @deprecated for backwards compat with v0.2.0 */
 export class KVStorageArea extends CloudflareStorageArea {};
+
 export { CloudflareStorageArea as CFStorageArea }; // for ease of use
-export * from './interface';
+
+export * from 'kv-storage-interface';
