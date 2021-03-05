@@ -1,4 +1,6 @@
 import { StorageArea, AllowedKey, Key } from 'kv-storage-interface';
+import { SetRequired, Except } from 'type-fest';
+
 import { throwForDisallowedKey } from './common'
 import { encodeKey, decodeKey } from './key-encoding';
 import { KVPacker, TypesonPacker } from './packer';
@@ -18,55 +20,78 @@ import { KVPacker, TypesonPacker } from './packer';
 export class CloudflareStorageArea implements StorageArea {
   #kv: KVNamespace;
   #packer: KVPacker;
+  #encodeKey: typeof encodeKey;
+  #decodeKey: typeof decodeKey;
+  #paginationHelper: typeof paginationHelper;
 
-  constructor(name: string | KVNamespace, { packer = new TypesonPacker() }: KVOptions = {}) {
-    this.#kv = (typeof name === 'string')
-      ? Reflect.get(self, name)
-      : name;
+  constructor(name: KVNamespace, opts?: Except<KVOptions, 'namespace'>);
+  constructor(name: string, opts?: SetRequired<KVOptions, 'namespace'>);
+  constructor(name: string | KVNamespace, { namespace, packer = new TypesonPacker() }: KVOptions = {}) {
+    this.#kv = namespace 
+      ? namespace 
+      : typeof name === 'string' 
+        ? Reflect.get(self, name) 
+        : name;
     if (!this.#kv) throw Error('KV binding missing. Consult Workers documentation for details')
+
+    this.#encodeKey = !namespace 
+      ? encodeKey
+      : k => `${name}:${encodeKey(k)}`;
+
+    this.#decodeKey = !namespace 
+      ? decodeKey
+      : k => decodeKey(k.substring((name as string).length + 1));
+
+    this.#paginationHelper = !namespace
+      ? paginationHelper
+      : (kv, { prefix, ...opts } = {}) =>  paginationHelper(kv, { 
+        prefix: `${namespace}:${prefix ?? ''}`,
+        ...opts,
+      });
+
     this.#packer = packer;
   }
 
   async get<T>(key: AllowedKey, opts?: unknown): Promise<T> {
     throwForDisallowedKey(key);
-    return this.#packer.get(this.#kv, encodeKey(key), opts);
+    return this.#packer.get(this.#kv, this.#encodeKey(key), opts);
   }
 
   async set<T>(key: AllowedKey, value: T | undefined, opts?: KVPutOptions): Promise<void> {
     throwForDisallowedKey(key);
     if (value === undefined) 
-      await this.#kv.delete(encodeKey(key));
+      await this.#kv.delete(this.#encodeKey(key));
     else {
-      await this.#packer.set(this.#kv, encodeKey(key), value, opts);
+      await this.#packer.set(this.#kv, this.#encodeKey(key), value, opts);
     }
   }
 
   async delete(key: AllowedKey) {
     throwForDisallowedKey(key);
-    return this.#kv.delete(encodeKey(key));
+    return this.#kv.delete(this.#encodeKey(key));
   }
 
   async clear(opts?: KVListOptions) {
-    for await (const key of paginationHelper(this.#kv, opts)) {
+    for await (const key of this.#paginationHelper(this.#kv, opts)) {
       await this.#kv.delete(key)
     }
   }
 
   async *keys(opts?: KVListOptions): AsyncGenerator<Key> {
-    for await (const key of paginationHelper(this.#kv, opts)) {
-      yield decodeKey(key);
+    for await (const key of this.#paginationHelper(this.#kv, opts)) {
+      yield this.#decodeKey(key);
     }
   }
 
   async *values<T>(opts?: KVListOptions): AsyncGenerator<T> {
-    for await (const key of paginationHelper(this.#kv, opts)) {
+    for await (const key of this.#paginationHelper(this.#kv, opts)) {
       yield this.#packer.get(this.#kv, key, opts);
     }
   }
 
   async *entries<T>(opts?: KVListOptions): AsyncGenerator<[Key, T]> {
-    for await (const key of paginationHelper(this.#kv, opts)) {
-      yield [decodeKey(key), await this.#packer.get(this.#kv, key, opts)];
+    for await (const key of this.#paginationHelper(this.#kv, opts)) {
+      yield [this.#decodeKey(key), await this.#packer.get(this.#kv, key, opts)];
     }
   }
 
@@ -76,7 +101,8 @@ export class CloudflareStorageArea implements StorageArea {
 }
 
 export interface KVOptions {
-  packer?: KVPacker
+  namespace?: KVNamespace;
+  packer?: KVPacker;
 }
 
 export interface KVPutOptions {
