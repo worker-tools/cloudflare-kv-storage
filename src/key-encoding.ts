@@ -75,7 +75,7 @@ const keyToKeyString = (key: InternalAllowedKey): string => {
     return `d:${key.toISOString()}`;
   }
   if (key instanceof Uint8Array) {
-    return `b:${new Base64Encoder().encode(key)}`
+    return `b:${new Base64Encoder({ url: true }).encode(key)}`
   }
   if (Array.isArray(key)) {
     return '<' + key.map(keyToKeyString).join('|') + '>';
