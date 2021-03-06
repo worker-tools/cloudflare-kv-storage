@@ -31,7 +31,6 @@
     "base64-encoding": "^0.14.3",
     "kv-storage-interface": "^0.1.2",
     "msgpackr": "^1.2.7",
-    "type-fest": "^0.21.2",
     "typeson": "^5.18.2",
     "typeson-registry": "^1.0.0-alpha.38"
   },

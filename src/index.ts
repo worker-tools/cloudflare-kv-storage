@@ -1,9 +1,12 @@
 import { StorageArea, AllowedKey, Key } from 'kv-storage-interface';
-import { SetRequired, Except } from 'type-fest';
 
 import { throwForDisallowedKey } from './common'
 import { encodeKey, decodeKey } from './key-encoding';
 import { KVPacker, TypesonPacker } from './packer';
+
+const DEFAULT_KV_NAMESPACE_KEY = 'CF_STORAGE_AREA__DEFAULT_KV_NAMESPACE';
+const DEFAULT_STORAGE_AREA_NAME = 'default';
+const DIV = '/';
 
 /**
  * An implementation of the `StorageArea` interface wrapping Cloudflare Worker's KV store.
@@ -24,28 +27,39 @@ export class CloudflareStorageArea implements StorageArea {
   #decodeKey: typeof decodeKey;
   #paginationHelper: typeof paginationHelper;
 
-  constructor(name: KVNamespace, opts?: Except<KVOptions, 'namespace'>);
-  constructor(name: string, opts?: SetRequired<KVOptions, 'namespace'>);
-  constructor(name: string | KVNamespace, { namespace, packer = new TypesonPacker() }: KVOptions = {}) {
-    this.#kv = namespace 
-      ? namespace 
-      : typeof name === 'string' 
-        ? Reflect.get(self, name) 
+  static defaultKVNamespace?: KVNamespace;
+
+  constructor(name?: string, opts?: KVOptions);
+  constructor(name?: KVNamespace, opts?: Omit<KVOptions, 'namespace'>);
+  constructor(name: string | KVNamespace = DEFAULT_STORAGE_AREA_NAME, options: KVOptions = {}) {
+    let { namespace, packer = new TypesonPacker() } = options;
+
+    namespace = namespace
+      || CloudflareStorageArea.defaultKVNamespace
+      || Reflect.get(self, Reflect.get(self, DEFAULT_KV_NAMESPACE_KEY));
+
+    this.#kv = namespace
+      ? namespace
+      : typeof name === 'string'
+        ? Reflect.get(self, name)
         : name;
-    if (!this.#kv) throw Error('KV binding missing. Consult Workers documentation for details')
 
-    this.#encodeKey = !namespace 
+    if (!this.#kv) {
+      throw Error('KV binding missing. Consult Workers documentation for details');
+    }
+
+    this.#encodeKey = !namespace
       ? encodeKey
-      : k => `${name}:${encodeKey(k)}`;
+      : k => `${name}${DIV}${encodeKey(k)}`;
 
-    this.#decodeKey = !namespace 
+    this.#decodeKey = !namespace
       ? decodeKey
       : k => decodeKey(k.substring((name as string).length + 1));
 
     this.#paginationHelper = !namespace
       ? paginationHelper
-      : (kv, { prefix, ...opts } = {}) =>  paginationHelper(kv, { 
-        prefix: `${namespace}:${prefix ?? ''}`,
+      : (kv, { prefix, ...opts } = {}) => paginationHelper(kv, {
+        prefix: `${name}${DIV}${prefix ?? ''}`,
         ...opts,
       });
 
@@ -59,7 +73,7 @@ export class CloudflareStorageArea implements StorageArea {
 
   async set<T>(key: AllowedKey, value: T | undefined, opts?: KVPutOptions): Promise<void> {
     throwForDisallowedKey(key);
-    if (value === undefined) 
+    if (value === undefined)
       await this.#kv.delete(this.#encodeKey(key));
     else {
       await this.#packer.set(this.#kv, this.#encodeKey(key), value, opts);
@@ -103,15 +117,18 @@ export class CloudflareStorageArea implements StorageArea {
 export interface KVOptions {
   namespace?: KVNamespace;
   packer?: KVPacker;
+  [k: string]: any;
 }
 
 export interface KVPutOptions {
   expiration?: string | number;
   expirationTtl?: string | number;
+  [k: string]: any;
 }
 
 export interface KVListOptions {
   prefix?: string
+  [k: string]: any;
 }
 
 /** Abstracts Cloudflare KV's cursor-based pagination with async iteration. */
@@ -126,8 +143,8 @@ async function* paginationHelper(kv: KVNamespace, opts: KVListOptions = {}) {
 }
 
 /** @deprecated for backwards compat with v0.2.0 */
-export class KVStorageArea extends CloudflareStorageArea {};
+export class KVStorageArea extends CloudflareStorageArea { };
 
+export type { AllowedKey, Key };
 export { CloudflareStorageArea as CFStorageArea }; // for ease of use
-
-export * from 'kv-storage-interface';
+export { CloudflareStorageArea as StorageArea };
