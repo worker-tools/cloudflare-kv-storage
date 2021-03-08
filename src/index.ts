@@ -1,7 +1,6 @@
 import { StorageArea, AllowedKey, Key } from 'kv-storage-interface';
+import { encodeKey, decodeKey, throwForDisallowedKey } from 'idb-key-to-string';
 
-import { throwForDisallowedKey } from './common'
-import { encodeKey, decodeKey } from './key-encoding';
 import { KVPacker, TypesonPacker } from './packer';
 
 const DEFAULT_KV_NAMESPACE_KEY = 'CF_STORAGE_AREA__DEFAULT_KV_NAMESPACE';
@@ -116,6 +115,7 @@ export class CloudflareStorageArea implements StorageArea {
 
 export interface KVOptions {
   namespace?: KVNamespace;
+  /** @deprecated This feature is not stable yet. */
   packer?: KVPacker;
   [k: string]: any;
 }

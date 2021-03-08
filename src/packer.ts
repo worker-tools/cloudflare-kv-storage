@@ -3,7 +3,7 @@ import structuredCloningThrowing from 'typeson-registry/dist/presets/structured-
 import { Encoder as MsgPackEncoder, Decoder as MsgPackDecoder } from 'msgpackr';
 // import { Encoder as CBOREncoder, Decoder as CBORDecoder } from 'cbor-x';
 
-import { KVPutOptions } from '.';
+import type { KVPutOptions } from '.';
 
 // https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Structured_clone_algorithm
 const TSON = new Typeson().register(structuredCloningThrowing);
