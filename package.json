@@ -1,6 +1,6 @@
 {
   "name": "@worker-tools/cloudflare-kv-storage",
-  "version": "0.7.3",
+  "version": "0.8.0",
   "description": "An implementation of the StorageArea interface wrapping Cloudflare's KV storage",
   "type": "module",
   "main": "index.js",
