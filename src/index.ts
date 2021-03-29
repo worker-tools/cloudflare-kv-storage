@@ -7,6 +7,8 @@ const DEFAULT_KV_NAMESPACE_KEY = 'CF_STORAGE_AREA__DEFAULT_KV_NAMESPACE';
 const DEFAULT_STORAGE_AREA_NAME = 'default';
 const DIV = '/';
 
+const getProcessEnv = (k: string) => Reflect.get(Reflect.get(Reflect.get(self, 'process') || {}, 'env') || {}, k);
+
 /**
  * An implementation of the `StorageArea` interface wrapping Cloudflare Worker's KV store.
  * 
@@ -35,7 +37,8 @@ export class CloudflareStorageArea implements StorageArea {
 
     namespace = namespace
       || CloudflareStorageArea.defaultKVNamespace
-      || Reflect.get(self, Reflect.get(self, DEFAULT_KV_NAMESPACE_KEY));
+      || Reflect.get(self, Reflect.get(self, DEFAULT_KV_NAMESPACE_KEY))
+      || Reflect.get(self, getProcessEnv(DEFAULT_KV_NAMESPACE_KEY));
 
     this.#kv = namespace
       ? namespace
