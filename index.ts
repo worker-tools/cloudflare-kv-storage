@@ -1,9 +1,13 @@
-import { StorageArea, AllowedKey, Key } from 'kv-storage-interface';
-import { encodeKey, decodeKey, throwForDisallowedKey } from 'idb-key-to-string';
+// deno-lint-ignore-file no-explicit-any
+import 'https://cdn.skypack.dev/@cloudflare/workers-types@3.11.0?dts'
+import type { StorageArea, AllowedKey, Key } from 'https://ghuc.cc/qwtel/kv-storage-interface/index.d.ts';
 
-import { KVPacker, TypesonPacker } from './packer';
+import { encodeKey, decodeKey, throwForDisallowedKey } from 'https://cdn.skypack.dev/idb-key-to-string?dts';
 
-const DEFAULT_KV_NAMESPACE_KEY = 'CF_STORAGE_AREA__DEFAULT_KV_NAMESPACE';
+import { KVPacker, TypesonPacker } from './packer.ts';
+
+const OLD_DEFAULT_KV_NAMESPACE_KEY = 'CF_STORAGE_AREA__DEFAULT_KV_NAMESPACE';
+const DEFAULT_KV_NAMESPACE_KEY = 'DEFAULT_KV_NAMESPACE';
 const DEFAULT_STORAGE_AREA_NAME = 'default';
 const DIV = '/';
 
@@ -38,6 +42,7 @@ export class CloudflareStorageArea implements StorageArea {
     namespace = namespace
       || CloudflareStorageArea.defaultKVNamespace
       || Reflect.get(self, Reflect.get(self, DEFAULT_KV_NAMESPACE_KEY))
+      || Reflect.get(self, Reflect.get(self, OLD_DEFAULT_KV_NAMESPACE_KEY))
       || Reflect.get(self, getProcessEnv(DEFAULT_KV_NAMESPACE_KEY));
 
     this.#kv = namespace
@@ -68,7 +73,7 @@ export class CloudflareStorageArea implements StorageArea {
     this.#packer = packer;
   }
 
-  async get<T>(key: AllowedKey, opts?: unknown): Promise<T> {
+  get<T>(key: AllowedKey, opts?: unknown): Promise<T> {
     throwForDisallowedKey(key);
     return this.#packer.get(this.#kv, this.#encodeKey(key), opts);
   }
@@ -82,7 +87,7 @@ export class CloudflareStorageArea implements StorageArea {
     }
   }
 
-  async delete(key: AllowedKey) {
+  delete(key: AllowedKey) {
     throwForDisallowedKey(key);
     return this.#kv.delete(this.#encodeKey(key));
   }
