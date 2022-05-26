@@ -41,7 +41,7 @@ await build({
       name: "typeson",
       version: "^7.0.2",
     },
-    "https://cdn.skypack.dev/typeson-registry@3.0.0?dts": {
+    "https://unpkg.com/typeson-registry@3.0.0/dist/index.js": {
       name: "typeson-registry",
       version: "^3.0.0",
     },
