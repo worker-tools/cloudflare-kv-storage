@@ -1,5 +1,5 @@
 // deno-lint-ignore-file no-explicit-any
-import 'https://cdn.skypack.dev/@cloudflare/workers-types@3.11.0?dts'
+// import 'https://cdn.skypack.dev/@cloudflare/workers-types@3.11.0?dts'
 import type { StorageArea, AllowedKey, Key } from 'https://ghuc.cc/qwtel/kv-storage-interface/index.d.ts';
 
 import { encodeKey, decodeKey, throwForDisallowedKey } from 'https://cdn.skypack.dev/idb-key-to-string?dts';
@@ -26,16 +26,20 @@ const getProcessEnv = (k: string) => Reflect.get(Reflect.get(Reflect.get(self, '
  * it's much better to use Cloudflare's KV directly.
  */
 export class CloudflareStorageArea implements StorageArea {
+  // @ts-ignore: deno only
   #kv: KVNamespace;
   #packer: KVPacker;
   #encodeKey: typeof encodeKey;
   #decodeKey: typeof decodeKey;
   #paginationHelper: typeof paginationHelper;
 
+  // @ts-ignore: deno only
   static defaultKVNamespace?: KVNamespace;
 
   constructor(name?: string, opts?: KVOptions);
+  // @ts-ignore: deno only
   constructor(name?: KVNamespace, opts?: Omit<KVOptions, 'namespace'>);
+  // @ts-ignore: deno only
   constructor(name: string | KVNamespace = DEFAULT_STORAGE_AREA_NAME, options: KVOptions = {}) {
     let { namespace, packer = new TypesonPacker() } = options;
 
@@ -122,6 +126,7 @@ export class CloudflareStorageArea implements StorageArea {
 }
 
 export interface KVOptions {
+  // @ts-ignore: deno only
   namespace?: KVNamespace;
   /** @deprecated This feature is not stable yet. */
   packer?: KVPacker;
@@ -140,6 +145,7 @@ export interface KVListOptions {
 }
 
 /** Abstracts Cloudflare KV's cursor-based pagination with async iteration. */
+// @ts-ignore: deno only
 async function* paginationHelper(kv: KVNamespace, opts: KVListOptions = {}) {
   let keys: { name: string; expiration?: number; metadata?: unknown }[];
   let done: boolean;

@@ -1,7 +1,7 @@
 #!/usr/bin/env -S deno run --allow-read --allow-write=./,/Users/qwtel/Library/Caches/deno --allow-net --allow-env=HOME,DENO_AUTH_TOKENS,DENO_DIR --allow-run=git,pnpm
 
 import { basename } from "https://deno.land/std@0.133.0/path/mod.ts";
-import { build, emptyDir } from "https://deno.land/x/dnt/mod.ts";
+import { build, emptyDir } from "https://deno.land/x/dnt@0.23.0/mod.ts";
 
 import { 
   copyMdFiles, mkPackage,
@@ -32,10 +32,6 @@ await build({
     "https://cdn.skypack.dev/idb-key-to-string?dts": {
       name: "idb-key-to-string",
       version: "latest",
-    },
-    "https://cdn.skypack.dev/@cloudflare/workers-types@3.11.0?dts": {
-      name: "@cloudflare/workers-types",
-      version: "^3.11.0",
     },
     "https://cdn.skypack.dev/typeson@7.0.2?dts": {
       name: "typeson",
