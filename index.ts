@@ -4,7 +4,7 @@ import type { StorageArea, AllowedKey, Key } from 'https://ghuc.cc/qwtel/kv-stor
 
 import { encodeKey, decodeKey, throwForDisallowedKey } from 'https://cdn.skypack.dev/idb-key-to-string?dts';
 
-import { KVPacker, TypesonPacker } from './packer.ts';
+import { KVPacker, StructuredPacker } from './packer.ts';
 
 const OLD_DEFAULT_KV_NAMESPACE_KEY = 'CF_STORAGE_AREA__DEFAULT_KV_NAMESPACE';
 const DEFAULT_KV_NAMESPACE_KEY = 'DEFAULT_KV_NAMESPACE';
@@ -41,7 +41,7 @@ export class CloudflareStorageArea implements StorageArea {
   constructor(name?: KVNamespace, opts?: Omit<KVOptions, 'namespace'>);
   // @ts-ignore: deno only
   constructor(name: string | KVNamespace = DEFAULT_STORAGE_AREA_NAME, options: KVOptions = {}) {
-    let { namespace, packer = new TypesonPacker() } = options;
+    let { namespace, packer = new StructuredPacker() } = options;
 
     namespace = namespace
       || CloudflareStorageArea.defaultKVNamespace
@@ -157,8 +157,8 @@ async function* paginationHelper(kv: KVNamespace, opts: KVListOptions = {}) {
 }
 
 /** @deprecated for backwards compat with v0.2.0 */
-export class KVStorageArea extends CloudflareStorageArea { };
+export class KVStorageArea extends CloudflareStorageArea { }
 
 export type { AllowedKey, Key };
-export { CloudflareStorageArea as CFStorageArea }; // for ease of use
+export { CloudflareStorageArea as CFStorageArea };
 export { CloudflareStorageArea as StorageArea };

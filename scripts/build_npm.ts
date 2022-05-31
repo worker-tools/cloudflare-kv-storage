@@ -33,13 +33,9 @@ await build({
       name: "idb-key-to-string",
       version: "latest",
     },
-    "https://cdn.skypack.dev/typeson@7.0.2?dts": {
-      name: "typeson",
-      version: "^7.0.2",
-    },
-    "https://unpkg.com/typeson-registry@3.0.0/dist/index.js": {
-      name: "typeson-registry",
-      version: "^3.0.0",
+    "https://ghuc.cc/worker-tools/structured-json/index.ts": {
+      name: "@worker-tools/structured-json",
+      version: "latest",
     },
     "https://cdn.skypack.dev/msgpackr@1.5.5?dts": {
       name: "msgpackr",
